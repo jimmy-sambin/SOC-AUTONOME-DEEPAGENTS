@@ -148,7 +148,7 @@ prouvent que la valeur est dans **l'architecture**, pas dans un scénario codé 
 * **Orchestration d'agents** : DeepAgents (superviseur + sous-agents, mémoire virtuelle)
 * **Modèle LLM** : OpenAI gpt-5.4-mini
 * **Environnement de test** : SOC 100 % simulé en mémoire (aucun système réel)
-* **Base de connaissances** : RAG Qdrant (livre du projet indexé, embeddings 1536 d)
+* **Base de connaissances** : Omar Santos, Agentic AI for Cybersecurity
 * **Visualisation** : MATLAB R2024a (batch, export PNG 150 dpi)
 * **Doctrine de référence** : Omar Santos, *Agentic AI for Cybersecurity*, ch. 7
 
