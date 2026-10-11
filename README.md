@@ -164,7 +164,7 @@ hacking éthique / ASM, SOC autonome ×2) — **100 % de réussite**.
 
 * **Code de référence** : [santosomar/AI-agents-for-cybersecurity](https://github.com/santosomar/AI-agents-for-cybersecurity) (Omar Santos, Cisco / O'Reilly)
 * **Livre** : *Agentic AI for Cybersecurity — Building Autonomous Defenders and Adversaries*, Omar Santos
-* **Portfolio** : [github.com/jimmy-sambi](https://github.com/jimmy-sambi)
+* **Portfolio** : [github.com/jimmy-sambin](https://github.com/jimmy-sambin)
 
 ## Roadmap
 
