@@ -1,0 +1,8 @@
+# Fichiers de travail MATLAB
+scripts_matlab/matlab_run.log
+*.asv
+*.mex*
+
+# Fichiers systeme
+Thumbs.db
+.DS_Store

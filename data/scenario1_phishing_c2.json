@@ -1,0 +1,48 @@
+{
+  "scenario": "Phishing -> vol d'identifiants -> mouvement lateral -> C2",
+  "source": "soc_agent.py (deepagents) - Omar Santos",
+  "alert_queue": [
+    {"alert_id": "ALRT-1001", "severity": "high", "title": "Suspicious PowerShell with encoded command", "host": "WKS-4471", "user": "jdoe", "source": "EDR", "indicators": {"process": "powershell.exe", "parent": "outlook.exe"}},
+    {"alert_id": "ALRT-1002", "severity": "high", "title": "Impossible travel sign-in", "host": null, "user": "jdoe", "source": "Identity Provider", "indicators": {"ip": "185.220.101.47", "country": "RO"}},
+    {"alert_id": "ALRT-1003", "severity": "critical", "title": "Outbound connection to known C2 server", "host": "WKS-4471", "user": "jdoe", "source": "Firewall", "indicators": {"ip": "185.220.101.47", "port": 443}},
+    {"alert_id": "ALRT-1004", "severity": "low", "title": "Windows Defender definitions updated", "host": "WKS-2210", "user": "system", "source": "EDR", "indicators": {}},
+    {"alert_id": "ALRT-1005", "severity": "informational", "title": "Scheduled vulnerability scan completed", "host": "SCANNER-01", "user": "svc_scanner", "source": "Vuln Scanner", "indicators": {}}
+  ],
+  "asset_inventory": {
+    "WKS-4471": {"owner": "jdoe", "department": "Finance", "criticality": "high", "os": "Windows 11", "data_classification": "confidential (financial records)"},
+    "WKS-2210": {"owner": "asmith", "department": "Marketing", "criticality": "low", "os": "Windows 11", "data_classification": "internal"}
+  },
+  "user_directory": {
+    "jdoe": {"full_name": "Jane Doe", "title": "Senior Financial Analyst", "privileges": "local admin on WKS-4471; access to finance file shares", "mfa_enabled": true, "recent_events": "Password unchanged 240 days; clicked link in an email 35 min ago"}
+  },
+  "threat_intel": {
+    "185.220.101.47": {"verdict": "malicious", "categories": ["c2", "tor-exit-node"], "confidence": 95, "last_seen": "active in the last 24h"},
+    "a3f1c9d2e4b5076889aabbccddeeff00112233445566778899aabbccddeeff00": {"verdict": "malicious", "categories": ["trojan", "loader"], "confidence": 88, "last_seen": "2 days ago"}
+  },
+  "siem_logs": [
+    "2026-05-30T13:58:02Z host=WKS-4471 user=jdoe outlook.exe opened attachment 'Invoice_May.docm'",
+    "2026-05-30T13:58:40Z host=WKS-4471 user=jdoe powershell.exe -enc <base64> spawned by outlook.exe",
+    "2026-05-30T13:58:55Z host=WKS-4471 powershell.exe downloaded http://185.220.101.47/payload.bin",
+    "2026-05-30T13:59:10Z host=WKS-4471 new file C:\\Users\\jdoe\\AppData\\update.exe sha256=a3f1c9d2e4b50768...",
+    "2026-05-30T14:01:33Z host=WKS-4471 outbound TLS to 185.220.101.47:443 bytes_out=48211",
+    "2026-05-30T14:03:12Z host=WKS-4471 user=jdoe SMB session to WKS-2210 (admin$)",
+    "2026-05-30T14:05:48Z idp user=jdoe sign-in from 185.220.101.47 (RO) success - impossible travel vs 14:00 US sign-in"
+  ],
+  "resultat_agent": {
+    "duree_minutes": 5.13,
+    "severite": "High",
+    "priorite": "High",
+    "confiance": "Medium-Low",
+    "alertes_escaladees": ["ALRT-1001", "ALRT-1002", "ALRT-1003"],
+    "alertes_supprimees": ["ALRT-1004", "ALRT-1005"],
+    "incident_corrle": "phishing -> credential theft -> lateral movement -> C2",
+    "actions_stagees": [
+      "isolate_host WKS-4471",
+      "disable_account jdoe",
+      "preserve volatile evidence",
+      "review recent logons",
+      "hunt related indicators"
+    ],
+    "toutes_en_attente_approbation_humaine": true
+  }
+}

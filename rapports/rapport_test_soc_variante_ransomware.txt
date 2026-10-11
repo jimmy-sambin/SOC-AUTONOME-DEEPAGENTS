@@ -1,0 +1,151 @@
+================================================================================
+RAPPORT DE TEST ET D'ANALYSE - VARIANTE
+AGENT SOC AUTONOME : SCENARIO RANSOMWARE + EXFILTRATION
+================================================================================
+Date du test      : 10 octobre 2026
+Duree             : 4 min 41
+Script            : soc_agent_scenarios.py (variante de soc_agent.py, donnees
+                    simulees remplacees ; architecture et prompts inchanges)
+Modele            : openai:gpt-5.4-mini (DeepAgents)
+Statut            : REUSSI - l'agent S'EST ADAPTE a un type d'incident different
+Objectif du test  : verifier que le meme systeme d'agents, sans modifier les
+                    prompts ni les sous-agents, gere correctement un scenario
+                    d'incident completement different du scenario d'origine.
+
+================================================================================
+1. NOUVEAU SCENARIO FOURNI A L'AGENT (6 alertes, 4 reelles + 2 bruit)
+================================================================================
+
+Chaine d'attaque simulee (ransomware double-extorsion) :
+  02:14  rwilliams (operateur de sauvegarde, MFA desactive, mot de passe
+         reuse d'une ancienne fuite) se connecte en VPN depuis 203.0.113.88
+  02:20  creation du compte admin pirate svc_backup2 via PowerShell distant
+  02:22  svc_backup2 ajoute au groupe Domain Admins
+  02:31  session RDP de svc_backup2 sur SRV-FIN01 (serveur Finance, donnees
+         restreintes : records financiers + PII)
+  02:38  vssadmin delete shadows /all /quiet (anti-restauration)
+  02:41  ransom.exe : 14 283 fichiers renommes en .locked en 4 minutes
+  02:45  note de rancon README_RESTORE.txt
+  02:52  EXFILTRATION : 2,3 Go uploades vers megafile-upload.top (double
+         extorsion)
+  02:58  beacon C2 vers 45.133.1.208:443 (infra ransomware, confiance 96)
+
+Alertes de bruit a ecarter : sauvegarde nocturne OK (informational) et
+renouvellement de certificat TLS (low).
+
+Difficultes nouvelles par rapport au scenario d'origine :
+- Type d'incident different (ransomware vs phishing/C2 simple)
+- Un COMPTE PIRATE cree par l'attaquant (pas seulement un compte legitime
+  compromis)
+- Une dimension EXFILTRATION de masse (2,3 Go) + double extorsion
+- Un actif critique de type SERVEUR (pas un poste de travail)
+- 4 indicateurs distincts a traiter (IP VPN, IP C2, domaine d'exfiltration,
+  hash ransomware)
+
+================================================================================
+2. CE QUE L'AGENT A FAIT (TRACE OBSERVEE)
+================================================================================
+
+TRIAGE       : 4 vraies alertes escaladees (ALRT-2001 a 2004), bruit
+               correctement ecarte (sauvegarde nocturne, certificat TLS)
+ENRICHISSEMENT: rwilliams (operateur de sauvegarde, MFA desactive, mot de
+               passe reuse) + svc_backup2 identifie comme COMPTE CONTROLE
+               PAR L'ATTAQUANT + actif SRV-FIN01 critique + threat intel des
+               4 indicateurs
+INVESTIGATION: timeline complete reconstruite depuis les logs SIEM
+CORRELATION  : un seul incident coordonne avec "confiance elevee"
+REPONSE      : 6 actions STAGEES (PENDING APPROVAL), ordonnees par urgence
+
+RAPPORT FINAL (extraits cles)
+- Severite : CRITICAL, Priorite : P1 / Immediate, Confiance : HIGH
+  (note : le scenario 1 donnait High/High avec confiance "Medium-Low" ;
+  ici l'agent a correctement module la severite ET la confiance selon les
+  donnees disponibles - preuve de jugement, pas de copier-coller)
+- Comptes affectes : rwilliams ET svc_backup2 (compte non autorise /
+  controle par l'attaquant) - l'agent a compris la nuance compte legitime
+  compromis vs compte pirate cree
+- Infrastructure associee : VPN IP + domaine d'exfiltration
+
+ACTIONS STAGEES (6, toutes PENDING APPROVAL, ordonnees par urgence) :
+  1. Isoler SRV-FIN01 (arreter chiffrement + exfiltration, preserver preuves)
+  2. Desactiver rwilliams (arreter l'abus de privilege)
+  3. Desactiver svc_backup2 (supprimer l'acces et la persistance attaquant)
+  4. Bloquer 203.0.113.88 (activite VPN suspecte)
+  5. Bloquer megafile-upload.top (empecher la poursuite du vol de donnees)
+  6. Bloquer 45.133.1.208 (empecher beacon/reinfection)
+
+ETAPES ANALYSTE (specificiques au ransomware - preuve d'adaptation) :
+  1. Preserver les preuves volatiles + telemetrie EDR
+  2. Confirmer l'etendue du chiffrement et si les SAUVEGARDES sont touchees
+  3. Identifier comment les identifiants rwilliams ont ete obtenus, les
+     reinitialiser
+  4. Valider le chemin de creation de svc_backup2, retirer les privileges
+     non autorises
+  5. Revisiter les logs reseau pour d'autres hotes contactes par meme IP/domaine
+  6. VALIDER LES POINTS DE RESTAURATION avant toute remediation
+
+================================================================================
+3. ANALYSE - L'AGENT S'EST-IL ADAPTE ? OUI, SUR 6 AXES
+================================================================================
+
+AXE 1 : TYPE D'INCIDENT
+Le playbook mental a change : au lieu de "phishing -> C2", l'agent a
+reconnu la chaine ransomware classique (compromission compte ->
+elevation -> anti-restauration -> chiffrement -> exfiltration -> C2).
+
+AXE 2 : SEVERITE ET PRIORITE
+Critical/P1/Immediate (vs High dans le scenario 1) : l'agent a module la
+gravite selon la nature des faits (chiffrement de masse = indisponibilite
+immediate d'un actif critique + exfiltration = double extorsion).
+
+AXE 3 : CONFIANCE MODULEE
+High ici (logs riches et horodates) vs Medium-Low dans le scenario 1.
+L'agent fonde sa confiance sur les donnees, pas sur un modele fige.
+(Correction notable du point faible observe dans le test precedent : les
+timestamps des SIEM_LOGS ont bien ete exploites cette fois.)
+
+AXE 4 : NUANCE COMPTES
+Distinction correcte entre rwilliams (compte LEGITIME compromis -> a
+desactiver ET reinitialiser) et svc_backup2 (compte PIRATE -> a desactiver
+et supprimer). Beaucoup de systemes regles traitent les deux pareil.
+
+AXE 5 : RESPONSE PROPORTIONNEE
+6 actions couvrant les 3 vecteurs (hote, identites, reseau) dans l'ordre
+d'urgence, toutes stagées avec justification. Aucune action executee.
+
+AXE 6 : CONSEILS SPECIFIQUES RANSOMWARE
+"Valider les points de restauration AVANT remediation" et "verifier si les
+sauvegardes sont touchees" : des reflexes anti-ransomware authentiques
+(nun jamais restaurer sur un environnement encore compromis).
+
+LIMITES / POINTS DE VIGILANCE
+- Le rapport s'appuie sur des donnees SIMULEES : la qualite vient de la
+  coherence du dataset. Sur un SIEM reel, la qualite dependra de la
+  telemetrie disponible.
+- Les IDs de familles de ransomware ("lockbit-variant") viennent du
+  threat intel fourni, pas d'une analyse binaire - ne pas extrapoler.
+- Toujours verifier l'exactitude des recommandations techniques avant
+  execution (principe humain-dans-la-boucle conserve).
+
+================================================================================
+4. CONCLUSION
+================================================================================
+
+Le meme systeme d'agents (meme prompts, memes sous-agents, meme outils)
+a produit un traitement professionnel correct d'un incident RADICALEMENT
+different, simplement en changeant les donnees simulees. C'est la preuve
+que la valeur est dans l'ARCHITECTURE (superviseur + 5 sous-agents phases +
+outils moindre privilege + garde-fous d'approbation), pas dans un scenario
+code en dur.
+
+Implication pratique : ce modele est un CANDIDAT SERIEUX a l'industrialisation
+(remplacer les dictionnaires simules par des exports SIEM/EDR reels, garder
+l'approbation humaine, ajouter tests et observabilite - voir procedure §6).
+
+================================================================================
+5. RESSOURCES
+================================================================================
+Script variante : C:\dll\AI-agents-for-cybersecurity\part5_agents_and_tools\
+                  deepagents_example\soc_agent_scenarios.py
+Rapport du test original : C:\dll\rapport_test_soc_autonome.txt
+Guide d'usage   : C:\dll\guide_actions.md (action 2)

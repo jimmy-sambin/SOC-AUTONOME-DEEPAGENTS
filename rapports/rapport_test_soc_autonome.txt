@@ -1,0 +1,137 @@
+================================================================================
+RAPPORT DE TEST ET D'ANALYSE
+AGENT SOC AUTONOME (deepagents_example/soc_agent.py)
+================================================================================
+Date du test      : 10 octobre 2026
+Duree             : 5 min 08
+Modele            : openai:gpt-5.4-mini (DeepAgents)
+Statut            : REUSSI - le test le plus significatif de la serie (11/11)
+Scene             : SOC simule en memoire (aucun systeme reel touche)
+Chapitre du livre : Ch. 7 "Building an Autonomous SOC Analyst"
+Cout              : quelques dizaines de milliers de tokens (< 0,05 USD)
+
+================================================================================
+1. DISPOSITIF DE TEST
+================================================================================
+
+Environnement simule fourni au script :
+- ALERT_QUEUE   : 5 alertes entrantes (EDR, IdP, firewall, scan, maintenance)
+- ASSET_INVENTORY : WKS-4471 (Finance, critique, donnees confidentielles),
+  WKS-2210 (Marketing, faible)
+- USER_DIRECTORY : jdoe (analyste financier, admin local, MFA active,
+  "a clique un lien dans un email il y a 35 min")
+- THREAT_INTEL  : IP 185.220.101.47 (C2/tor-exit, confiance 95) et un hash
+  sha256 (trojan/loader, confiance 88)
+- SIEM_LOGS     : 7 lignes de logs chronologiques (piece jointe Outlook,
+  PowerShell -enc, telechargement de payload, SMB vers WKS-2210, sign-in RO)
+
+Architecture : un SUPERVISEUR + 5 SOUS-AGENTS specialises (un par phase du
+workflow SOC), chacun avec ses SEULS outils (moindre privilege) :
+  Triage -> Enrichissement -> Investigation -> Correlation -> Reponse
+
+Requete passe au superviseur : executer le workflow complet et produire le
+rapport d'incident.
+
+================================================================================
+2. CE QUE L'AGENT A FAIT (TRACE OBSERVEE)
+================================================================================
+
+PHASE TRIAGE (analyste Tier-1)
+- Retenu : ALRT-1001 (PowerShell encode), ALRT-1002 (impossible travel),
+  ALRT-1003 (C2 sortant)
+- SUPPRIME le bruit : "Defender definitions updated" et "vulnerability scan
+  completed" -> correctement classes benign/informational
+- Aucune regle codee en dur : classification par raisonnement
+
+PHASE ENRICHISSEMENT
+- Actif : WKS-4471 = Finance/critique/confidentiel -> impact metier eleve
+- Utilisateur : jdoe = admin local + partages finance + a clique un lien
+- Threat intel : IP C2 confirmee malveillante (95), hash trojan/loader (88)
+
+PHASE INVESTIGATION
+- Requete des logs SIEM et de l'arbre de processus
+- Timeline reconstruite : piece jointe Outlook -> PowerShell encode ->
+  telechargement payload -> C2 -> mouvement lateral SMB -> sign-in RO
+- MITRE ATT&CK mappe ou evident
+
+PHASE CORRELATION
+- Les 3 alertes eparses reliees en UN SEUL incident :
+  "compromission de jdoe sur WKS-4471 : phishing -> vol d'identifiants ->
+  mouvement lateral -> C2"
+
+PHASE REPONSE (garde-fous)
+- Actions STAGEES, jamais executees :
+  * PENDING APPROVAL - isole WKS-4471
+  * PENDING APPROVAL - desactive jdoe
+  * PENDING APPROVAL - preserve les preuves volatiles AVANT action disruptive
+  * + chasse aux indicateurs sur les hotes voisins
+
+RAPPORT FINAL
+Sections conformes au modele SOC : Summary, Severity (High/High, confiance
+"Medium-Low" JUSTIFIEE par l'absence d'horodatage), Assets/Users, Timeline,
+IOCs (jdoe, WKS-4471, IP C2, comportements), alertes corrlees, actions
+stagées, prochaines etapes pour l'analyste. Sauvegarde du rapport dans le
+fichier virtuel incident_report.md.
+
+================================================================================
+3. ANALYSE - POURQUOI CE TEST EST LE PLUS SIGNIFICATIF
+================================================================================
+
+QUALITE 1 : LE JUGEMENT (tri du bruit)
+L'agent a ecarte 2 alertes sur 5 sans regle preetablie. Le quotidien d'un
+analyste Tier-1 est justement de trier le bruit ; un systeme qui fait tout
+passer en incident cree l'inverse du bien (alert fatigue).
+
+QUALITE 2 : LA CORRELATION (valeur d'un analyste senior)
+Vues separement, les 3 alertes sont banales (un PowerShell, un login
+etranger, une connexion sortante). Reliees, elles forment une chaine
+d'attaque complete. La correlation inter-signaux est LA competence qui
+distingue un analyste senior d'un outil de regles.
+
+QUALITE 3 : L'HONNETETE INTELLECTUELLE
+Le rapport affiche "Confiance : Medium-Low" et explique pourquoi (pas de
+logs/horodatages exploitables). Beaucoup de LLM auraient INVENTE une
+timeline complete avec des heures precises. Admettre l'incertitude est un
+comportement de systeme fiable, rare et precieux.
+
+QUALITE 4 : LES GARDE-FOUS (alignes sur la doctrine du livre, Ch. 7)
+Isoler un poste ou desactiver un compte = actions a fort impact metier.
+L'agent les a STAGEES (preparees) sans les executer, en exigeant une
+approbation humaine, avec justification ecrite pour chaque action. C'est
+exactement la separation recommander/preparer/executer preconisee par le
+chapitre 7 (identites distinctes, RBAC, just-in-time elevation).
+
+QUALITE 5 : L'ARCHITECTURE MULTI-AGENTS
+Le superviseur ne touche jamais les outils bruts : il planifie (write_todos),
+delegue chaque phase a un sous-agent specialise au contexte PROPRE, et ne
+recoit que des resumes concis. Ce modele "equipe" evite la saturation du
+contexte et imite l'organisation reelle d'un SOC (escalade par niveaux).
+
+LIMITE OBSERVEE
+L'investigation a signale l'absence de logs exploitables pour la timeline
+exacte : dans la simulation, les SIEM_LOGS contenaient pourtant des
+horodatages. Le sous-agent investigation n'a apparemment pas recupere les
+timestamps dans son resume vers le superviseur (compression du contexte).
+Lecon d'architecture : preciser dans le prompt des sous-agents quels champs
+doivent absolument remonter (ici : les timestamps).
+
+================================================================================
+4. MISE EN PERSPECTIVE
+================================================================================
+
+- Ce test valide la these du Ch. 7 du livre : un SOC autonome est un SYSTEME
+  (perception -> raisonnement -> action -> memoire), pas un chatbot.
+- Comparaison avec les autres tests : les autres agents prouvent qu'un agent
+  SAIT FAIRE une chose ; celui-ci prouve qu'un systeme d'agents peut
+  TRAVAILLER COMME UNE EQUIPE sur un probleme complexe de bout en bout.
+- Suite du test (voir rapport de variante) : nouveau scenario ransomware +
+  exfiltration de donnees, pour verifier l'adaptation de l'agent a un type
+  d'incident different (fichier : soc_agent_scenarios.py).
+
+================================================================================
+5. RESSOURCES
+================================================================================
+Script            : C:\dll\AI-agents-for-cybersecurity\part5_agents_and_tools\
+                    deepagents_example\soc_agent.py
+Variante scenario : soc_agent_scenarios.py (ransomware + exfiltration)
+Documentation     : procedure_installation.md, guide_actions.md (action 2)

@@ -1,0 +1,59 @@
+{
+  "scenario": "Ransomware double-extorsion : compromission VPN -> compte pirate -> RDP -> anti-restauration -> chiffrement -> exfiltration -> C2",
+  "source": "soc_agent_scenarios.py (variante de soc_agent.py, meme architecture)",
+  "alert_queue": [
+    {"alert_id": "ALRT-2001", "severity": "critical", "title": "Mass file rename to .locked extension (ransomware behavior)", "host": "SRV-FIN01", "user": "rwilliams", "source": "EDR", "indicators": {"process": "ransom.exe", "extension": ".locked", "sha256": "b7e2a1f4c8d9076889aabbccddeeff00112233445566778899aabbccddeeff00"}},
+    {"alert_id": "ALRT-2002", "severity": "critical", "title": "Volume shadow copies deleted via vssadmin", "host": "SRV-FIN01", "user": "rwilliams", "source": "EDR", "indicators": {"process": "vssadmin.exe", "args": "delete shadows /all /quiet"}},
+    {"alert_id": "ALRT-2003", "severity": "high", "title": "Large outbound upload to file-sharing domain (2.3 GB)", "host": "SRV-FIN01", "user": "rwilliams", "source": "Firewall", "indicators": {"domain": "megafile-upload.top", "bytes_out": 2469606195}},
+    {"alert_id": "ALRT-2004", "severity": "high", "title": "New admin account created and used from unusual VPN IP", "host": null, "user": "svc_backup2", "source": "Identity Provider", "indicators": {"ip": "203.0.113.88", "account_created": true}},
+    {"alert_id": "ALRT-2005", "severity": "informational", "title": "Nightly backup job completed successfully", "host": "SRV-FIN01", "user": "system", "source": "Backup", "indicators": {}},
+    {"alert_id": "ALRT-2006", "severity": "low", "title": "TLS certificate renewed on file server", "host": "SRV-FIN01", "user": "system", "source": "PKI", "indicators": {}}
+  ],
+  "asset_inventory": {
+    "SRV-FIN01": {"owner": "it-infra", "department": "Finance", "criticality": "critical", "os": "Windows Server 2022", "data_classification": "restricted (financial records, PII)"},
+    "DB-SQL02": {"owner": "dba-team", "department": "Finance", "criticality": "critical", "os": "Windows Server 2022", "data_classification": "restricted (customer database)"}
+  },
+  "user_directory": {
+    "rwilliams": {"full_name": "Robert Williams", "title": "Backup Operator (service account owner)", "privileges": "backup operator on SRV-FIN01 and DB-SQL02; access to backup console", "mfa_enabled": false, "recent_events": "VPN sign-in from 203.0.113.88 (commercial VPN) at 02:14; password reused from an old breach"},
+    "svc_backup2": {"full_name": "UNKNOWN (rogue account)", "title": "Account created at 02:20 via remote PowerShell", "privileges": "added to Domain Admins at 02:22; used to RDP SRV-FIN01", "mfa_enabled": false, "recent_events": "No legitimate owner identified - treat as attacker-controlled"}
+  },
+  "threat_intel": {
+    "203.0.113.88": {"verdict": "suspicious", "categories": ["commercial-vpn-exit"], "confidence": 60, "last_seen": "first seen today"},
+    "45.133.1.208": {"verdict": "malicious", "categories": ["c2", "ransomware-infra"], "confidence": 96, "last_seen": "active in the last 24h"},
+    "megafile-upload.top": {"verdict": "malicious", "categories": ["exfiltration-destination", "double-extortion"], "confidence": 90, "last_seen": "associated with ransomware campaigns this month"},
+    "b7e2a1f4c8d9076889aabbccddeeff00112233445566778899aabbccddeeff00": {"verdict": "malicious", "categories": ["ransomware", "lockbit-variant"], "confidence": 92, "last_seen": "3 days ago"}
+  },
+  "siem_logs": [
+    "2026-10-10T02:14:03Z idp user=rwilliams VPN sign-in from 203.0.113.88 success (commercial VPN exit)",
+    "2026-10-10T02:20:11Z idp new admin account svc_backup2 created via remote powershell from 203.0.113.88",
+    "2026-10-10T02:22:44Z ad svc_backup2 added to Domain Admins group by remote session",
+    "2026-10-10T02:31:09Z rdp session svc_backup2 -> SRV-FIN01 from 203.0.113.88",
+    "2026-10-10T02:38:52Z host=SRV-FIN01 vssadmin.exe delete shadows /all /quiet spawned by cmd.exe",
+    "2026-10-10T02:41:37Z host=SRV-FIN01 ransom.exe mass rename *.xlsx *.docx -> *.locked (14,283 files in 4 min)",
+    "2026-10-10T02:45:02Z host=SRV-FIN01 ransom note written C:\\Users\\Public\\README_RESTORE.txt",
+    "2026-10-10T02:52:18Z host=SRV-FIN01 curl.exe upload 2.3 GB to https://megafile-upload.top/up bytes_out=2469606195",
+    "2026-10-10T02:58:41Z host=SRV-FIN01 outbound TLS to 45.133.1.208:443 (periodic beacon pattern)"
+  ],
+  "resultat_agent": {
+    "duree_minutes": 4.68,
+    "severite": "Critical",
+    "priorite": "P1 / Immediate",
+    "confiance": "High",
+    "alertes_escaladees": ["ALRT-2001", "ALRT-2002", "ALRT-2003", "ALRT-2004"],
+    "alertes_supprimees": ["ALRT-2005", "ALRT-2006"],
+    "incident_corrle": "VPN compromise -> rogue admin account -> RDP -> shadow copies deleted -> mass encryption -> exfiltration -> C2 beacon",
+    "actions_stagees": [
+      "isolate_host SRV-FIN01",
+      "disable_account rwilliams",
+      "disable_account svc_backup2",
+      "block_indicator 203.0.113.88",
+      "block_indicator megafile-upload.top",
+      "block_indicator 45.133.1.208"
+    ],
+    "toutes_en_attente_approbation_humaine": true,
+    "conseils_specifiques_ransomware": [
+      "Confirmer l'etendue du chiffrement et verifier si les sauvegardes sont touchees",
+      "Valider les points de restauration AVANT toute remediation"
+    ]
+  }
+}

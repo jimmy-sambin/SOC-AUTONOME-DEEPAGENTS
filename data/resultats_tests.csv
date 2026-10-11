@@ -1,0 +1,16 @@
+test,duree_minutes,statut,categorie
+Installation uv + 243 paquets,20,REUSSI,Environnement
+Imports + connectivite reseau,2,REUSSI,Environnement
+Hugging Face DistilBERT (hors-ligne),2.5,REUSSI,Fondamentaux
+Clustering K-means/t-SNE 1000 CVE,4.7,REUSSI,Fondamentaux
+Agent ReAct + outil HIBP,2.2,REUSSI,Agent
+Agent SOC autonome (scenario phishing/C2),5.1,REUSSI,SOC autonome
+Agent nmap (scan scanme.nmap.org),2,REUSSI,Agent
+RAG agentique (Chroma + decision),1.3,REUSSI,RAG
+MCP cyber complet (nmap + CISA KEV),6.5,REUSSI,MCP
+Shodan MCP (serveur reecrit + agent),5,REUSSI,MCP
+CrewAI gestion des vulnerabilites,1.5,REUSSI,Multi-agents
+Agent CISA KEV (LangGraph),3.9,REUSSI,LangGraph
+Agent hacking ethique (LangGraph),1.1,REUSSI,LangGraph
+Attack Surface Management (LangGraph),1.7,REUSSI,LangGraph
+SOC autonome variante ransomware+exfiltration,4.7,REUSSI,SOC autonome

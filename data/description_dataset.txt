@@ -1,0 +1,52 @@
+DESCRIPTION DES DONNEES - PROJET SOC AUTONOME
+=============================================
+
+Deux jeux de donnees simulent un SOC (Security Operations Center) et servent
+d'environnement de test a un systeme d'agents IA autonomes (superviseur +
+5 sous-agents specialises). TOUT est simule en memoire : aucun systeme reel
+n'est touche.
+
+FICHIERS
+--------
+scenario1_phishing_c2.json            Scenario 1 : phishing -> vol
+                                      d'identifiants -> mouvement lateral -> C2
+scenario2_ransomware_exfiltration.json Scenario 2 : ransomware double-extorsion
+                                      (VPN compromis -> compte pirate -> RDP ->
+                                      suppression shadow copies -> chiffrement
+                                      de masse -> exfiltration 2,3 Go -> C2)
+resultats_tests.csv                   Durees et statuts des 15 tests du projet
+
+STRUCTURE COMMUNE DES SCENARIOS (champs JSON)
+---------------------------------------------
+alert_queue        File d'alertes entrantes.
+                   - alert_id  : identifiant (ALRT-1xxx / ALRT-2xxx)
+                   - severity  : critical / high / low / informational
+                   - title     : description de l'alerte
+                   - host/user : actif et compte concernes (peuvent etre null)
+                   - source    : EDR, Firewall, Identity Provider, Backup, PKI
+                   - indicators: IOCs (process, ip, domain, sha256, ...)
+
+asset_inventory    CMDB simulee : proprietaire, departement, criticite, OS,
+                   classification des donnees (juge l'impact metier).
+
+user_directory     Annuaire : role, privileges, statut MFA, evenements
+                   recents (juge la surface d'attaque du compte).
+
+threat_intel       Reputation des indicateurs : verdict, categories,
+                   confiance (0-100), derniere observation.
+
+siem_logs          Lignes de logs SIEM/EDR horodatees (reconstruction de la
+                   timeline de l'attaque par le sous-agent investigation).
+
+resultat_agent     Resultat observe du systeme d'agents apres execution :
+                   duree, severite/priorite/confiance, alertes escaladees vs
+                   supprimees, incident corrle, actions STAGEES (toutes en
+                   attente d'approbation humaine).
+
+POINT CLE DE CONCEPTION
+-----------------------
+Le meme systeme d'agents (memes prompts, memes sous-agents, memes outils) est
+teste sur deux incidents RADICALEMENT differents sans modifier une ligne de
+logique : seule la donnee change. Les resultats montrent que l'agent adapte
+son triage, sa severite, sa confiance et ses actions au type d'incident
+(ransomware vs phishing), ce qui valide l'architecture plutot qu'un scenario.
