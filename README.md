@@ -53,7 +53,7 @@ l'utiliser. Aucun outil n'est partagé entre sous-agents : **moindre privilege**
 
 Le projet est la mise en pratique du **chapitre 7** du livre *Agentic AI for
 Cybersecurity — Building Autonomous Defenders and Adversaries* (Omar Santos,
-2026), indexé dans une base RAG locale (Qdrant) :
+2026) :
 
 - **Le problème** : le fossé de vitesse entre attaquants et analystes humains.
   L'alert fatigue et l'économie du staffing rendent un SOC 100 % humain
