@@ -128,10 +128,3 @@ doivent absolument remonter (ici : les timestamps).
   exfiltration de donnees, pour verifier l'adaptation de l'agent a un type
   d'incident different (fichier : soc_agent_scenarios.py).
 
-================================================================================
-5. RESSOURCES
-================================================================================
-Script            : C:\dll\AI-agents-for-cybersecurity\part5_agents_and_tools\
-                    deepagents_example\soc_agent.py
-Variante scenario : soc_agent_scenarios.py (ransomware + exfiltration)
-Documentation     : procedure_installation.md, guide_actions.md (action 2)

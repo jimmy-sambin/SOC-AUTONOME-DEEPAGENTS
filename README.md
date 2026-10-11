@@ -1,5 +1,5 @@
 # SOC-AUTONOME-DEEPAGENTS
-**Auteur : Jimmy SAMBIN** | Ingenieur en automatisme
+**Auteur : Jimmy SAMBIN** | Ingénieur, je conjugue systèmes d'information, cybersécurité, intelligence artificielle appliquée et opération technologique
 
 ---
 

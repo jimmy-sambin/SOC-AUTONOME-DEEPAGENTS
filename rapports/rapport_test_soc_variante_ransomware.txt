@@ -142,10 +142,3 @@ Implication pratique : ce modele est un CANDIDAT SERIEUX a l'industrialisation
 (remplacer les dictionnaires simules par des exports SIEM/EDR reels, garder
 l'approbation humaine, ajouter tests et observabilite - voir procedure §6).
 
-================================================================================
-5. RESSOURCES
-================================================================================
-Script variante : C:\dll\AI-agents-for-cybersecurity\part5_agents_and_tools\
-                  deepagents_example\soc_agent_scenarios.py
-Rapport du test original : C:\dll\rapport_test_soc_autonome.txt
-Guide d'usage   : C:\dll\guide_actions.md (action 2)
